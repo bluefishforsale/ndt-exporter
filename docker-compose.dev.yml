@@ -1,0 +1,27 @@
+version: "3.8"
+
+services:
+  ndt-exporter:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      platforms:
+        - linux/arm64
+    ports:
+      - "9140:9140"
+    environment:
+      - DEBUG=1
+    command: ["-i", "60", "-p", "9140"]
+    restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python3",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:9140/metrics')",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s

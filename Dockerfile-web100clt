@@ -1,0 +1,26 @@
+FROM ubuntu:latest
+
+ARG PORT
+ARG SERVERS
+RUN apt-get update 
+RUN apt-get install -y python3-pip
+RUN pip3 install prometheus-client
+
+RUN apt-get install -y wget tar make libssl-dev libjansson-dev dns
+
+RUN wget http://software.internet2.edu/sources/ndt/ndt-3.7.0.tar.gz &&\
+    tar xvzf ndt-3.7.0.tar.gz
+
+RUN cd ndt-3.7.0&&\
+    ./configure &&\
+    make &&\
+    make install
+
+RUN apt-get clean &&\
+    rm -rf /tmp/*
+
+RUN mkdir /app
+COPY run-speedtest.py /app/
+
+#ENTRYPOINT [ "/app/run-speedtest.py" ]
+ENTRYPOINT ["web100clt", "-n", "ndt-mlab3-nuq04.mlab-oti.measurement-lab.org"]
