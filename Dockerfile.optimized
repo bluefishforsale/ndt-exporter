@@ -15,7 +15,10 @@ ENV CGO_ENABLED=0
 ENV GOOS=${TARGETOS}
 ENV GOARCH=${TARGETARCH}
 
-RUN go install github.com/m-lab/ndt7-client-go/cmd/ndt7-client@latest
+# Clone and build to a known location
+RUN git clone https://github.com/m-lab/ndt7-client-go.git /src && \
+    cd /src && \
+    go build -o /usr/local/bin/ndt7-client ./cmd/ndt7-client
 
 # Runtime stage - minimal Python image
 FROM --platform=${TARGETPLATFORM} python:3.11-alpine
@@ -27,13 +30,14 @@ ARG BUILDPLATFORM
 RUN apk add --no-cache \
     ca-certificates \
     tzdata \
+    wget \
     && rm -rf /var/cache/apk/*
 
 # Install Python dependencies with minimal overhead
 RUN pip install --no-cache-dir --no-compile prometheus-client==0.19.0
 
 # Copy binary from build stage
-COPY --from=builder /go/bin/ndt7-client /usr/local/bin/ndt7-client
+COPY --from=builder /usr/local/bin/ndt7-client /usr/local/bin/ndt7-client
 RUN chmod +x /usr/local/bin/ndt7-client
 
 # Copy application
