@@ -45,6 +45,15 @@ M-Lab NDT speedtest exporter for Prometheus monitoring.
 3. Build production images with `./build.sh` (creates AMD64 + ARM64)
 4. Deploy with existing `ndt-exporter.sh` script
 
+## CI/CD
+
+Automated builds via GitHub Actions:
+- **Main branch pushes**: Auto-build and push `latest` tag to DockerHub
+- **Git tags (v*)**: Auto-build and push versioned releases
+- **Pull requests**: Build validation without publishing
+
+Setup: See [CI Setup Guide](.github/SETUP-CI.md) for DockerHub integration.
+
 ## Metrics
 
 - `ndt_speedtest{name="ping"}`: Round-trip time in ms
