@@ -1,0 +1,53 @@
+# NDT Speedtest Exporter
+
+M-Lab NDT speedtest exporter for Prometheus monitoring.
+
+## Cross-Platform Development
+
+### Local Development (M1 Mac ARM64)
+
+```bash
+# Start development environment
+./dev.sh up
+
+# View logs
+./dev.sh logs
+
+# Stop environment  
+./dev.sh down
+
+# Build and test locally
+./dev.sh build
+./dev.sh test
+```
+
+### Production Deployment (AMD64 Linux)
+
+```bash
+# Build multi-platform images
+./build.sh latest
+
+# Deploy to production host
+./ndt-exporter.sh
+```
+
+## Architecture
+
+- **Base**: golang:1.21-bullseye with multi-platform support
+- **Binary**: ndt7-client installed to `/usr/local/bin/`
+- **Metrics**: Exposed on port 9140 at `/metrics`
+- **Interval**: Default 300s, configurable via `-i`
+
+## Development Workflow
+
+1. Edit code locally on M1 Mac
+2. Test with `./dev.sh up` (builds ARM64 for local testing)
+3. Build production images with `./build.sh` (creates AMD64 + ARM64)
+4. Deploy with existing `ndt-exporter.sh` script
+
+## Metrics
+
+- `ndt_speedtest{name="ping"}`: Round-trip time in ms
+- `ndt_speedtest{name="download"}`: Download speed in Mbps  
+- `ndt_speedtest{name="upload"}`: Upload speed in Mbps
+- `ndt_speedtest{name="retrans"}`: Retransmissions count
