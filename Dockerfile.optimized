@@ -1,0 +1,53 @@
+# Multi-stage build for minimal container size
+# Build stage - compile ndt7-client
+FROM --platform=${BUILDPLATFORM} golang:1.21-alpine AS builder
+
+ARG TARGETPLATFORM
+ARG BUILDPLATFORM
+ARG TARGETOS
+ARG TARGETARCH
+
+# Install build dependencies
+RUN apk add --no-cache git ca-certificates
+
+# Build ndt7-client for target platform
+ENV CGO_ENABLED=0
+ENV GOOS=${TARGETOS}
+ENV GOARCH=${TARGETARCH}
+
+RUN go install github.com/m-lab/ndt7-client-go/cmd/ndt7-client@latest
+
+# Runtime stage - minimal Python image
+FROM --platform=${TARGETPLATFORM} python:3.11-alpine
+
+ARG TARGETPLATFORM
+ARG BUILDPLATFORM
+
+# Install only runtime dependencies
+RUN apk add --no-cache \
+    ca-certificates \
+    tzdata \
+    && rm -rf /var/cache/apk/*
+
+# Install Python dependencies with minimal overhead
+RUN pip install --no-cache-dir --no-compile prometheus-client==0.19.0
+
+# Copy binary from build stage
+COPY --from=builder /go/bin/ndt7-client /usr/local/bin/ndt7-client
+RUN chmod +x /usr/local/bin/ndt7-client
+
+# Copy application
+RUN mkdir /app
+COPY run-speedtest.py /app/
+RUN chmod +x /app/run-speedtest.py
+
+# Create non-root user for security
+RUN adduser -D -s /bin/sh speedtest
+USER speedtest
+
+EXPOSE 9140
+
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+  CMD wget --no-verbose --tries=1 --spider http://localhost:9140/metrics || exit 1
+
+ENTRYPOINT ["/app/run-speedtest.py"]

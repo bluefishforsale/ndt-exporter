@@ -1,0 +1,38 @@
+# Ultra-minimal build using distroless
+# Build stage - compile ndt7-client
+FROM --platform=${BUILDPLATFORM} golang:1.21-alpine AS go-builder
+
+ARG TARGETPLATFORM
+ARG BUILDPLATFORM  
+ARG TARGETOS
+ARG TARGETARCH
+
+RUN apk add --no-cache git ca-certificates
+
+ENV CGO_ENABLED=0
+ENV GOOS=${TARGETOS}
+ENV GOARCH=${TARGETARCH}
+
+RUN go install github.com/m-lab/ndt7-client-go/cmd/ndt7-client@latest
+
+# Python build stage - compile dependencies
+FROM --platform=${BUILDPLATFORM} python:3.11-alpine AS py-builder
+
+RUN pip install --no-cache-dir --target=/install prometheus-client==0.19.0
+
+# Final stage - distroless Python
+FROM --platform=${TARGETPLATFORM} gcr.io/distroless/python3-debian12:latest
+
+# Copy CA certificates
+COPY --from=go-builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+
+# Copy binaries and dependencies
+COPY --from=go-builder /go/bin/ndt7-client /usr/local/bin/ndt7-client
+COPY --from=py-builder /install /usr/local/lib/python3.11/site-packages/
+
+# Copy application
+COPY run-speedtest.py /app/run-speedtest.py
+
+EXPOSE 9140
+
+ENTRYPOINT ["/usr/bin/python3", "/app/run-speedtest.py"]

@@ -24,8 +24,14 @@ M-Lab NDT speedtest exporter for Prometheus monitoring.
 ### Production Deployment (AMD64 Linux)
 
 ```bash
-# Build multi-platform images
+# Build optimized images (default: ~120MB)
 ./build.sh latest
+
+# Build ultra-minimal images (~50MB)
+./build.sh latest Dockerfile.minimal
+
+# Build original version (~400MB)  
+./build.sh latest Dockerfile
 
 # Deploy to production host
 ./ndt-exporter.sh
@@ -33,10 +39,12 @@ M-Lab NDT speedtest exporter for Prometheus monitoring.
 
 ## Architecture
 
-- **Base**: golang:1.21-bullseye with multi-platform support
-- **Binary**: ndt7-client installed to `/usr/local/bin/`
+- **Base**: Multi-stage build (golang:alpine + python:alpine)
+- **Size**: 120MB optimized, 50MB minimal (vs 400MB original)  
+- **Binary**: ndt7-client cross-compiled for target platform
 - **Metrics**: Exposed on port 9140 at `/metrics`
 - **Interval**: Default 300s, configurable via `-i`
+- **Security**: Non-root user, distroless option available
 
 ## Development Workflow
 
